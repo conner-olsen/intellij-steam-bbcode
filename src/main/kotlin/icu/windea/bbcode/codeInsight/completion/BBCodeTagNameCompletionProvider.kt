@@ -13,35 +13,44 @@ import icu.windea.bbcode.psi.*
 class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>() {
     companion object {
         private val blockContainerTagNames = setOf("list", "ul", "ol", "olist")
+        private val tagPattern = Regex("""\[(/)?([A-Za-z0-9*_-]+)(?:[^\]]*)]""")
     }
 
     override fun addCompletions(parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet) {
         val project = parameters.originalFile.project
-        if(parameters.position.prevSibling?.elementType != BBCodeTypes.TAG_PREFIX_START) return
-        val tag = parameters.position.parent?.castOrNull<BBCodeTag>() ?: return
-        val parentTag = tag.parent?.castOrNull<BBCodeTag>()
+        if(!isAfterTagPrefix(parameters)) return
+        val schema = BBCodeSchemaManager.getSchema(project) ?: return
+        val tag = parameters.position.parentOfType<BBCodeTag>(withSelf = false)
         val addedTagNames = mutableSetOf<String>()
+        if(tag == null) {
+            addFallbackContextCompletions(parameters, schema, addedTagNames, result)
+            return
+        }
+        val parentTag = tag.parentOfType<BBCodeTag>(withSelf = false)
         if(parentTag == null) {
-            val schema = BBCodeSchemaManager.getSchema(project) ?: return
             //typing a root tag
             schema.tags.forEach f@{ tagSchema ->
                 if(!tagSchema.parentNames.isNullOrEmpty()) return@f
                 addLookupElement(tagSchema, addedTagNames, result)
             }
         } else {
-            val parentTagSchema = BBCodeSchemaManager.resolveForTag(parentTag) ?: return
-            // If completion happens inside a line list item (e.g. [*]...),
-            // use the surrounding list container for child-tag suggestions.
-            val completionContextTagSchema = parentTagSchema.takeUnless { it.type == BBCodeTagType.Line }
-                ?: parentTag.parent?.castOrNull<BBCodeTag>()?.let { BBCodeSchemaManager.resolveForTag(it) }
-                ?: parentTagSchema
-            val schema = BBCodeSchemaManager.getSchema(project) ?: return
-            completionContextTagSchema.childNames?.forEach f@{ childName ->
+            val completionContextTagSchema = findCompletionContextTagSchema(parentTag)
+            val effectiveContextTagSchema = when {
+                completionContextTagSchema?.childNames != null -> completionContextTagSchema
+                else -> findFallbackContextTagSchema(parameters, schema)
+                    ?.takeIf { it.childNames != null }
+                    ?: completionContextTagSchema
+            }
+            if(effectiveContextTagSchema == null) {
+                addFallbackContextCompletions(parameters, schema, addedTagNames, result)
+                return
+            }
+            effectiveContextTagSchema.childNames?.forEach f@{ childName ->
                 val tagSchema = schema.tagMap[childName] ?: return@f
-                if(tagSchema.parentNames != null && completionContextTagSchema.name !in tagSchema.parentNames) return@f
+                if(tagSchema.parentNames != null && effectiveContextTagSchema.name !in tagSchema.parentNames) return@f
                 addLookupElement(tagSchema, addedTagNames, result)
             }
-            if(completionContextTagSchema.childNames == null) {
+            if(effectiveContextTagSchema.childNames == null) {
                 //typing a inline or empty tag
                 schema.tags.forEach f@{ tagSchema ->
                     if(!tagSchema.parentNames.isNullOrEmpty()) return@f
@@ -50,6 +59,81 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
                 }
             }
         }
+    }
+
+    private fun addFallbackContextCompletions(
+        parameters: CompletionParameters,
+        schema: BBCodeSchema,
+        addedTagNames: MutableSet<String>,
+        result: CompletionResultSet
+    ) {
+        val contextTagSchema = findFallbackContextTagSchema(parameters, schema)
+        if(contextTagSchema?.childNames != null) {
+            contextTagSchema.childNames.forEach { childName ->
+                val childTagSchema = schema.tagMap[childName] ?: return@forEach
+                addLookupElement(childTagSchema, addedTagNames, result)
+            }
+        } else {
+            schema.tags.forEach f@{ tagSchema ->
+                if(!tagSchema.parentNames.isNullOrEmpty()) return@f
+                addLookupElement(tagSchema, addedTagNames, result)
+            }
+        }
+    }
+
+    private fun findFallbackContextTagSchema(parameters: CompletionParameters, schema: BBCodeSchema): BBCodeSchema.Tag? {
+        val caretOffset = parameters.offset.coerceIn(0, parameters.originalFile.text.length)
+        val textBeforeCaret = parameters.originalFile.text.substring(0, caretOffset)
+        val openTagStack = mutableListOf<String>()
+        for(match in tagPattern.findAll(textBeforeCaret)) {
+            val isClosingTag = match.groupValues[1] == "/"
+            val tagName = match.groupValues[2]
+            val tagSchema = schema.tagMap[tagName] ?: continue
+            if(isClosingTag) {
+                val index = openTagStack.lastIndexOf(tagName)
+                if(index >= 0) {
+                    while(openTagStack.size > index) {
+                        openTagStack.removeAt(openTagStack.lastIndex)
+                    }
+                }
+            } else {
+                if(tagSchema.type != BBCodeTagType.Empty && tagSchema.type != BBCodeTagType.Line) {
+                    openTagStack += tagName
+                }
+            }
+        }
+        return openTagStack.lastOrNull()?.let { schema.tagMap[it] }
+    }
+
+    private fun isAfterTagPrefix(parameters: CompletionParameters): Boolean {
+        val text = parameters.originalFile.text
+        var offset = parameters.offset - 1
+        if(offset < 0 || offset >= text.length) return false
+        while(offset >= 0 && isTagNameCharacter(text[offset])) {
+            offset--
+        }
+        if(offset < 0 || text[offset] != '[') return false
+        if(offset + 1 < text.length && text[offset + 1] == '/') return false
+        return true
+    }
+
+    private fun isTagNameCharacter(c: Char): Boolean {
+        return c.isLetterOrDigit() || c == '_' || c == '-' || c == '*'
+    }
+
+    private fun findCompletionContextTagSchema(parentTag: BBCodeTag): BBCodeSchema.Tag? {
+        var currentTag: BBCodeTag? = parentTag
+        while(currentTag != null) {
+            val currentSchema = BBCodeSchemaManager.resolveForTag(currentTag)
+            if(currentSchema != null) {
+                val candidateSchema = if(currentSchema.type == BBCodeTagType.Line) {
+                    currentTag.parent?.castOrNull<BBCodeTag>()?.let { BBCodeSchemaManager.resolveForTag(it) } ?: currentSchema
+                } else currentSchema
+                if(candidateSchema.childNames != null) return candidateSchema
+            }
+            currentTag = currentTag.parent?.castOrNull()
+        }
+        return BBCodeSchemaManager.resolveForTag(parentTag)
     }
 
     private fun addLookupElement(tagSchema: BBCodeSchema.Tag, addedTagNames: MutableSet<String>, result: CompletionResultSet) {
@@ -98,14 +182,33 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
     private fun expandContainerBody(context: InsertionContext, tagName: String) {
         val editor = context.editor
         val document = context.document
+        val chars = document.charsSequence
         val caretOffset = editor.caretModel.offset
-        if(!startsWithClosingTag(document.charsSequence, caretOffset, tagName)) return
+        if(!startsWithClosingTag(chars, caretOffset, tagName)) return
+
+        val lineNumber = document.getLineNumber(caretOffset)
+        val lineStartOffset = document.getLineStartOffset(lineNumber)
+        val openingTagOffset = findOpeningTagOffset(chars, lineStartOffset, caretOffset)
+        if(openingTagOffset < lineStartOffset) return
+        val baseIndent = chars.subSequence(lineStartOffset, openingTagOffset).toString()
+        if(baseIndent.any { !it.isWhitespace() }) return
+
+        val childIndent = "$baseIndent "
         // Expand [tag]|[/tag] to:
         // [tag]
-        //  |
+        // <baseIndent><one-indent>|
         // [/tag]
-        document.insertString(caretOffset, "\n \n")
-        editor.caretModel.moveToOffset(caretOffset + 2)
+        document.insertString(caretOffset, "\n$childIndent\n$baseIndent")
+        editor.caretModel.moveToOffset(caretOffset + 1 + childIndent.length)
+    }
+
+    private fun findOpeningTagOffset(text: CharSequence, lineStartOffset: Int, caretOffset: Int): Int {
+        var i = caretOffset - 1
+        while(i >= lineStartOffset) {
+            if(text[i] == '[') return i
+            i--
+        }
+        return -1
     }
 
     private fun startsWithClosingTag(text: CharSequence, offset: Int, tagName: String): Boolean {

@@ -13,6 +13,8 @@ Entries under **Upstream History** are preserved from the original project and a
 * [X] Improved tag completion for list containers (`list`, `ul`, `ol`, `olist`) to expand into a multiline block with caret placed inside
 * [X] Added Enter-key handling so `[list]|[/list]` expands to a three-line block with caret on the middle line
 * [X] Fixed completion context inside line-style list items (`[*]...`) so nested `list` suggestions appear within list containers
+* [X] Fixed nested list completion expansion to preserve parent indentation in inserted inner list blocks
+* [X] Updated completions so that `[list]` and `[olist]` suggestions appear within list containers (for nested lists)
 
 ## Upstream History (before fork)
 

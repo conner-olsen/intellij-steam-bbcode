@@ -26,9 +26,11 @@ class BBCodeEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
         val caretOffset = editor.caretModel.offset
         val chars = document.charsSequence
         if(caretOffset < 0 || caretOffset >= chars.length) return EnterHandlerDelegate.Result.Continue
-        if(chars.getOrNull(caretOffset) != '[' || chars.getOrNull(caretOffset + 1) != '/') return EnterHandlerDelegate.Result.Continue
+        val closingOffsetDelta = chars.nextCharOffsetSkippingWhiteSpace(caretOffset)
+        val closingStartOffset = caretOffset + closingOffsetDelta
+        if(chars.getOrNull(closingStartOffset) != '[' || chars.getOrNull(closingStartOffset + 1) != '/') return EnterHandlerDelegate.Result.Continue
 
-        val endToken = file.findElementAt(caretOffset) ?: return EnterHandlerDelegate.Result.Continue
+        val endToken = file.findElementAt(closingStartOffset) ?: return EnterHandlerDelegate.Result.Continue
         if(endToken.elementType != TAG_SUFFIX_START) return EnterHandlerDelegate.Result.Continue
         val tag = endToken.parentOfType<BBCodeTag>(withSelf = false) ?: return EnterHandlerDelegate.Result.Continue
         val tagName = tag.name.orNull() ?: return EnterHandlerDelegate.Result.Continue
@@ -38,16 +40,16 @@ class BBCodeEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
             .firstOrNull { it.elementType == TAG_PREFIX_END || it.elementType == EMPTY_TAG_PREFIX_END }
             ?: return EnterHandlerDelegate.Result.Continue
         val bodyStartOffset = startTagEnd.endOffset
-        if(bodyStartOffset > caretOffset) return EnterHandlerDelegate.Result.Continue
-        val bodyText = chars.subSequence(bodyStartOffset, caretOffset)
+        if(bodyStartOffset > closingStartOffset) return EnterHandlerDelegate.Result.Continue
+        val bodyText = chars.subSequence(bodyStartOffset, closingStartOffset)
         if(bodyText.any { !it.isWhitespace() }) return EnterHandlerDelegate.Result.Continue
 
-        val currentLineStartOffset = document.getLineStartOffset(document.getLineNumber(caretOffset))
-        val baseIndent = chars.subSequence(currentLineStartOffset, caretOffset).toString()
+        val currentLineStartOffset = document.getLineStartOffset(document.getLineNumber(closingStartOffset))
+        val baseIndent = chars.subSequence(currentLineStartOffset, closingStartOffset).toString()
         if(baseIndent.any { !it.isWhitespace() }) return EnterHandlerDelegate.Result.Continue
 
-        document.insertString(caretOffset, " \n$baseIndent")
-        editor.caretModel.moveToOffset(caretOffset + 1)
+        document.insertString(closingStartOffset, " \n$baseIndent")
+        editor.caretModel.moveToOffset(closingStartOffset + 1)
         return EnterHandlerDelegate.Result.Continue
     }
 }

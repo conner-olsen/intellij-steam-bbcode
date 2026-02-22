@@ -9,8 +9,7 @@ import icu.windea.bbcode.psi.BBCodeTypes.*
 class BBCodeCompletionContributor : CompletionContributor() {
     private val tagSuffixPattern = psiElement().withElementType(TAG_NAME).afterLeaf("[/")
         .withParent(BBCodeTag::class.java)
-    private val tagNamePattern = psiElement().withElementType(TAG_NAME)
-        .withParent(BBCodeTag::class.java)
+    private val tagNamePattern = psiElement()
     private val attributeNamePattern = psiElement().withElementType(ATTRIBUTE_NAME)
         .withParent(BBCodeAttribute::class.java)
 
