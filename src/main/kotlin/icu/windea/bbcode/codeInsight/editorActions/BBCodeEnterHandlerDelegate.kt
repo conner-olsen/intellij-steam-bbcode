@@ -6,19 +6,16 @@ import com.intellij.openapi.editor.*
 import com.intellij.psi.*
 import com.intellij.psi.util.*
 import icu.windea.bbcode.*
-import icu.windea.bbcode.lang.*
 import icu.windea.bbcode.psi.*
 import icu.windea.bbcode.psi.BBCodeTypes.*
+
+private val blockContainerTagNames = setOf("list", "ul", "ol", "olist")
 
 // Expand [list]|[/list] on Enter to:
 // [list]
 //  |
 // [/list]
 class BBCodeEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
-    companion object {
-        private val blockContainerTagNames = setOf("list", "ul", "ol", "olist")
-    }
-
     override fun postProcessEnter(file: PsiFile, editor: Editor, dataContext: DataContext): EnterHandlerDelegate.Result {
         if(file !is BBCodeFile) return EnterHandlerDelegate.Result.Continue
 

@@ -54,6 +54,7 @@ When behavior changes:
 - Add or update parsing/schema tests for Steam list cases.
 - Keep sample data readable and focused on real BBCode snippets.
 - Run `gradlew.bat test` on Windows.
+- Clear IDE warnings in touched files before handoff (for example: unused imports, DevKit extension warnings, regex lint warnings, and test `tearDown`/`finally` warnings).
 
 ## Maintenance Notes
 - Canonical README path is `README.md`; do not maintain a separate Chinese README.

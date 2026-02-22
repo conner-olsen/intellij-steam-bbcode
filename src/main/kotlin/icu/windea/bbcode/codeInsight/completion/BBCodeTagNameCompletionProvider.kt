@@ -13,7 +13,7 @@ import icu.windea.bbcode.psi.*
 class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>() {
     companion object {
         private val blockContainerTagNames = setOf("list", "ul", "ol", "olist")
-        private val tagPattern = Regex("""\[(/)?([A-Za-z0-9*_-]+)(?:[^\]]*)]""")
+        private val tagPattern = Regex("""\[(/)?([A-Za-z0-9*_-]+)[^]]*]""")
     }
 
     override fun addCompletions(parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet) {

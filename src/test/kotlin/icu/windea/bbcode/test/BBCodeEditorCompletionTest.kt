@@ -18,10 +18,11 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
     }
 
     override fun tearDown() {
-        runCatching {
+        try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = oldAutocompleteOnCodeCompletion
+        } finally {
+            super.tearDown()
         }
-        super.tearDown()
     }
 
     fun testSuggestListInLineItemWithoutFollowingLineTag() {
