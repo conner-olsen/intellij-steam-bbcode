@@ -85,19 +85,22 @@
       </attributes>
       <description>Shows the image indicated by {url}</description>
     </tag>
-    <tag name="ul" childNames="li,*">
+    <tag name="ul" childNames="li,*,list,ul,ol,olist">
       <description>Displays an unordered list of {items}</description>
     </tag>
-    <tag name="ol" childNames="li,*">
+    <tag name="ol" childNames="li,*,list,ul,ol,olist">
       <description>Displays an ordered list of {items}</description>
     </tag>
-    <tag name="list" childNames="li,*">
-      <description>Displays an ordered list of {items}</description>
+    <tag name="olist" childNames="li,*,list,ul,ol,olist">
+      <description>Displays an ordered list of {items} (Steam style)</description>
     </tag>
-    <tag name="li" parentNames="ul,ol,list">
+    <tag name="list" childNames="li,*,list,ul,ol,olist">
+      <description>Displays a list of {items}</description>
+    </tag>
+    <tag name="li" parentNames="ul,ol,olist,list">
       <description>Specifies an {item} within a list</description>
     </tag>
-    <tag name="*" parentNames="ul,ol,list" type="line">
+    <tag name="*" parentNames="ul,ol,olist,list" type="line">
       <description>Specifies an {item} within a list (Shorthand)</description>
     </tag>
     <tag name="code" type="inline">

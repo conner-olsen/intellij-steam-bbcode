@@ -16,7 +16,7 @@ class BBCodeAnnotator : Annotator {
     }
 
     private fun annotateMismatchedTag(element: PsiElement, holder: AnnotationHolder) {
-        //标记不匹配的标签
+        // Highlight mismatched tags.
         if (element.elementType != BBCodeTypes.TAG_NAME) return
         val parent = element.parent ?: return
         val tag = (if (parent is PsiErrorElement) parent.parent else parent) as? BBCodeTag ?: return

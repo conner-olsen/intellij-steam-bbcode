@@ -1,6 +1,20 @@
 # Changelog
+This fork restarts release versioning at `1.0`.
+Entries under **Upstream History** are preserved from the original project and are not part of this fork's version sequence.
 
-## TODO
+## 1.0
+
+* [X] Forked from `DragonKnightOfBreeze/BBCode` to build Steam BBCode support
+* [X] Added `olist` schema support
+* [X] Added nested list-container schema support (`list`, `ul`, `ol`, `olist`)
+* [X] Updated schema parent rules for list item tags (`li`, `*`) to include `olist`
+* [X] Added Steam list schema assertions in `BBCodeSchemaResolvingTest`
+* [X] Updated bundled sample BBCode with `olist` and nested list examples
+* [X] Improved tag completion for list containers (`list`, `ul`, `ol`, `olist`) to expand into a multiline block with caret placed inside
+* [X] Added Enter-key handling so `[list]|[/list]` expands to a three-line block with caret on the middle line
+* [X] Fixed completion context inside line-style list items (`[*]...`) so nested `list` suggestions appear within list containers
+
+## Upstream History (before fork)
 
 ## 2.3
 
@@ -73,5 +87,3 @@
 ## 1.0
 
 * 完成基础的语言功能
-
-

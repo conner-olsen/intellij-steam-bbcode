@@ -1,5 +1,7 @@
 import org.jetbrains.changelog.*
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.*
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.utils.*
 
@@ -46,6 +48,16 @@ intellijPlatform {
         ideaVersion {
             sinceBuild.set(providers.gradleProperty("sinceBuild"))
             untilBuild.set(provider { null })
+        }
+    }
+    pluginVerification {
+        ides {
+            select {
+                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = providers.gradleProperty("sinceBuild").get()
+                untilBuild = "${providers.gradleProperty("sinceBuild").get()}.*"
+            }
         }
     }
     publishing {
@@ -109,7 +121,7 @@ tasks {
         }
     }
     withType<Jar> {
-        from("README.md", "README_en.md", "LICENSE")
+        from("README.md", "LICENSE")
     }
     runIde {
         jvmArgumentProviders += CommandLineArgumentProvider {

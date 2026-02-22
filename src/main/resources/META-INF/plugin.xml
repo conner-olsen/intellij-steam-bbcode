@@ -2,7 +2,7 @@
   <category>Languages</category>
   <resource-bundle>messages.BBCodeBundle</resource-bundle>
 
-  <vendor email="dk_breeze@qq.com" url="https://github.com/DragonKnightOfBreeze">DragonKnightOfBreeze</vendor>
+  <vendor email="contact@conner-olsen.dev" url="https://github.com/conner-olsen">Conner Olsen</vendor>
 
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.xml</depends>
@@ -18,6 +18,7 @@
     <completion.contributor language="BBCode" implementationClass="icu.windea.bbcode.codeInsight.completion.BBCodeCompletionContributor"/>
     <braceMatcher filetype="BBCode" implementationClass="icu.windea.bbcode.codeInsight.highlighting.BBCodeBraceMatcher"/>
     <typedHandler implementation="icu.windea.bbcode.codeInsight.editorActions.BBCodeSlashTypedHandler"/>
+    <enterHandlerDelegate implementation="icu.windea.bbcode.codeInsight.editorActions.BBCodeEnterHandlerDelegate"/>
     <lang.unwrapDescriptor language="BBCode" implementationClass="icu.windea.bbcode.codeInsight.unwrap.BBCodeUnwrapDescriptor"/>
     <langCodeStyleSettingsProvider implementation="icu.windea.bbcode.codeStyle.BBCodeLanguageCodeStyleSettingsProvider"/>
     <lang.formatter language="BBCode" implementationClass="icu.windea.bbcode.formatter.BBCodeFormattingModelBuilder"/>

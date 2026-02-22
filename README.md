@@ -1,14 +1,19 @@
-# BBCode
+# Steam BBCode for IntelliJ
 
-## 概述
+This repository provides Steam-focused BBCode support for IntelliJ-based IDEs.
+It started from the original BBCode plugin and is now maintained as a separate plugin.
 
-[中文文档](README.md) | [English Document](README_en.md)
+## Scope
 
-[GitHub](https://github.com/DragonKnightOfBreeze/BBCode) |
-[Plugin Marketplace Page](https://plugins.jetbrains.com/plugin/20769-bbcode)
+- Keep core BBCode language support.
+- Add Steam-specific schema behavior (for example, `olist` and nested list containers).
 
-BBCode语言支持。
+## References
 
-[BBCode](https://www.bbcode.org/)（Bulletin Board Code）是一种用于论坛网站的标记语言。
+- Original project: [DragonKnightOfBreeze/BBCode](https://github.com/DragonKnightOfBreeze/BBCode)
+- Plugin id: `io.github.conner-olsen.steambbcode`
 
-备注：插件默认为BBCode注册的文件名模式是`*.bbcode`，可以在`Settings -> Editor -> File Types`中配置。
+## File Type Note
+
+The plugin registers `*.bbcode` by default.
+You can change file patterns in `Settings -> Editor -> File Types`.

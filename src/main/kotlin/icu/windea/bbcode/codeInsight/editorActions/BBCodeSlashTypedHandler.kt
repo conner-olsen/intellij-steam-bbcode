@@ -11,7 +11,7 @@ import icu.windea.bbcode.*
 import icu.windea.bbcode.psi.*
 import icu.windea.bbcode.psi.BBCodeTypes.*
 
-//自动补全标签后缀
+// Auto-complete closing tags.
 //com.intellij.codeInsight.editorActions.XmlSlashTypedHandler
 
 class BBCodeSlashTypedHandler : TypedHandlerDelegate() {

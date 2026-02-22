@@ -1,1 +1,2 @@
-src/*/resources/** text eof=lf 
+src/*/resources/** text eol=lf
+src/test/testData/** text eol=lf

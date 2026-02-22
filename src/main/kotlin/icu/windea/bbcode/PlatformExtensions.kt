@@ -173,17 +173,17 @@ fun <E : PsiElement> E.createPointer(file: PsiFile?, project: Project = this.pro
     }
 }
 
-/** 将VirtualFile转化为指定类型的PsiFile。 */
+/** Convert a `VirtualFile` to a `PsiFile`. */
 inline fun VirtualFile.toPsiFile(project: Project): PsiFile? {
     return PsiManager.getInstance(project).findFile(this)
 }
 
-/** 将VirtualFile转化为指定类型的PsiDirectory。 */
+/** Convert a `VirtualFile` to a `PsiDirectory`. */
 inline fun VirtualFile.toPsiDirectory(project: Project): PsiDirectory? {
     return PsiManager.getInstance(project).findDirectory(this)
 }
 
-/** 将VirtualFile转化为指定类型的PsiFile或者PsiDirectory。 */
+/** Convert a `VirtualFile` to a `PsiFile` or `PsiDirectory`. */
 inline fun VirtualFile.toPsiFileSystemItem(project: Project): PsiFileSystemItem? {
     return if (this.isFile) PsiManager.getInstance(project).findFile(this) else PsiManager.getInstance(project).findDirectory(this)
 }
