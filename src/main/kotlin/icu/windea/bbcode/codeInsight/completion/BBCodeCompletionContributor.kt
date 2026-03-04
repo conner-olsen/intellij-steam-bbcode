@@ -15,8 +15,8 @@ class BBCodeCompletionContributor : CompletionContributor() {
 
     init {
         extend(CompletionType.BASIC, tagSuffixPattern, BBCodeTagSuffixCompletionProvider())
-        extend(null, tagNamePattern, BBCodeTagNameCompletionProvider())
-        extend(null, attributeNamePattern, BBCodeAttributeNameCompletionProvider())
+        extend(CompletionType.BASIC, tagNamePattern, BBCodeTagNameCompletionProvider())
+        extend(CompletionType.BASIC, attributeNamePattern, BBCodeAttributeNameCompletionProvider())
     }
 
     override fun beforeCompletion(context: CompletionInitializationContext) {

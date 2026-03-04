@@ -18,12 +18,13 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
 
     override fun addCompletions(parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet) {
         val project = parameters.originalFile.project
-        if(!isAfterTagPrefix(parameters)) return
+        val tagNamePrefix = getTagNamePrefix(parameters) ?: return
+        val prefixedResult = result.withPrefixMatcher(BBCodeTagPrefixMatcher(tagNamePrefix))
         val schema = BBCodeSchemaManager.getSchema(project) ?: return
         val tag = parameters.position.parentOfType<BBCodeTag>(withSelf = false)
         val addedTagNames = mutableSetOf<String>()
         if(tag == null) {
-            addFallbackContextCompletions(parameters, schema, addedTagNames, result)
+            addFallbackContextCompletions(parameters, schema, addedTagNames, prefixedResult)
             return
         }
         val parentTag = tag.parentOfType<BBCodeTag>(withSelf = false)
@@ -31,7 +32,7 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
             //typing a root tag
             schema.tags.forEach f@{ tagSchema ->
                 if(!tagSchema.parentNames.isNullOrEmpty()) return@f
-                addLookupElement(tagSchema, addedTagNames, result)
+                addLookupElement(tagSchema, addedTagNames, prefixedResult)
             }
         } else {
             val completionContextTagSchema = findCompletionContextTagSchema(parentTag)
@@ -42,20 +43,20 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
                     ?: completionContextTagSchema
             }
             if(effectiveContextTagSchema == null) {
-                addFallbackContextCompletions(parameters, schema, addedTagNames, result)
+                addFallbackContextCompletions(parameters, schema, addedTagNames, prefixedResult)
                 return
             }
             effectiveContextTagSchema.childNames?.forEach f@{ childName ->
                 val tagSchema = schema.tagMap[childName] ?: return@f
                 if(tagSchema.parentNames != null && effectiveContextTagSchema.name !in tagSchema.parentNames) return@f
-                addLookupElement(tagSchema, addedTagNames, result)
+                addLookupElement(tagSchema, addedTagNames, prefixedResult)
             }
             if(effectiveContextTagSchema.childNames == null) {
                 //typing a inline or empty tag
                 schema.tags.forEach f@{ tagSchema ->
                     if(!tagSchema.parentNames.isNullOrEmpty()) return@f
                     if(tagSchema.type != BBCodeTagType.Inline && tagSchema.type != BBCodeTagType.Empty) return@f
-                    addLookupElement(tagSchema, addedTagNames, result)
+                    addLookupElement(tagSchema, addedTagNames, prefixedResult)
                 }
             }
         }
@@ -105,16 +106,26 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
         return openTagStack.lastOrNull()?.let { schema.tagMap[it] }
     }
 
-    private fun isAfterTagPrefix(parameters: CompletionParameters): Boolean {
+    private fun getTagNamePrefix(parameters: CompletionParameters): String? {
         val text = parameters.originalFile.text
-        var offset = parameters.offset - 1
-        if(offset < 0 || offset >= text.length) return false
-        while(offset >= 0 && isTagNameCharacter(text[offset])) {
-            offset--
+        val offset = parameters.offset.coerceIn(0, text.length)
+        var prefixStart = offset - 1
+        if(prefixStart < 0 || prefixStart >= text.length) return null
+        while(prefixStart >= 0 && isTagNameCharacter(text[prefixStart])) {
+            prefixStart--
         }
-        if(offset < 0 || text[offset] != '[') return false
-        if(offset + 1 < text.length && text[offset + 1] == '/') return false
-        return true
+        if(prefixStart < 0 || text[prefixStart] != '[') return null
+        if(prefixStart + 1 < text.length && text[prefixStart + 1] == '/') return null
+
+        var prefixEnd = offset
+        while(prefixEnd < text.length && isTagNameCharacter(text[prefixEnd])) {
+            prefixEnd++
+        }
+        var prefix = text.substring(prefixStart + 1, prefixEnd)
+        if(prefix.endsWith(BBCodeConstants.dummyIdentifier)) {
+            prefix = prefix.removeSuffix(BBCodeConstants.dummyIdentifier)
+        }
+        return prefix
     }
 
     private fun isTagNameCharacter(c: Char): Boolean {
@@ -164,7 +175,13 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
                     if(nextChar == ']') {
                         //move caret to the right bound of "]"
                         EditorModificationUtil.moveCaretRelatively(editor, 1 + nextCharOffset)
-                    } else if(tagSchema.type == BBCodeTagType.Empty || tagSchema.type == BBCodeTagType.Line) {
+                        if(tagSchema.type == BBCodeTagType.Line) {
+                            insertLineTagTrailingSpace(editor)
+                        }
+                    } else if(tagSchema.type == BBCodeTagType.Line) {
+                        //insert "] " and move caret to the right bound
+                        EditorModificationUtil.insertStringAtCaret(editor, "] ", false, 2)
+                    } else if(tagSchema.type == BBCodeTagType.Empty) {
                         //insert "]" and move caret to the right bound
                         EditorModificationUtil.insertStringAtCaret(editor, "]", false, 1)
                     } else {
@@ -177,6 +194,26 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
                 }
             }
         result.addElement(lookupElement)
+    }
+
+    private fun insertLineTagTrailingSpace(editor: Editor) {
+        val caretOffset = editor.caretModel.offset
+        val nextChar = editor.document.charsSequence.getOrNull(caretOffset)
+        if(nextChar != ' ') {
+            EditorModificationUtil.insertStringAtCaret(editor, " ")
+        }
+    }
+
+    private class BBCodeTagPrefixMatcher(prefix: String) : PrefixMatcher(prefix) {
+        override fun cloneWithPrefix(prefix: String): PrefixMatcher = BBCodeTagPrefixMatcher(prefix)
+
+        override fun prefixMatches(name: String): Boolean {
+            return name.startsWith(prefix, ignoreCase = true)
+        }
+
+        override fun isStartMatch(name: String): Boolean {
+            return prefixMatches(name)
+        }
     }
 
     private fun expandContainerBody(context: InsertionContext, tagName: String) {
