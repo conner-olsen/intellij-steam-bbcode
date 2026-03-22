@@ -66,7 +66,11 @@ class BBCodeBlock(
         return when {
             elementType is IFileElementType -> Indent.getNoneIndent()
             elementType == TAG -> Indent.getNormalIndent()
-            else -> null
+            // Top-level elements (direct children of file root) must explicitly return
+            // no indent; returning null lets IntelliJ fall back to a default strategy
+            // that can add unwanted indent on Enter in plain-text content.
+            // Inside tags, null is correct — it inherits the tag's child indent.
+            else -> if (myNode.treeParent?.elementType is IFileElementType) Indent.getNoneIndent() else null
         }
     }
 
