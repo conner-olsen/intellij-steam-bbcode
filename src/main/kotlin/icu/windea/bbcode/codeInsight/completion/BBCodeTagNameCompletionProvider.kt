@@ -29,11 +29,7 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
         }
         val parentTag = tag.parentOfType<BBCodeTag>(withSelf = false)
         if(parentTag == null) {
-            //typing a root tag
-            schema.tags.forEach f@{ tagSchema ->
-                if(!tagSchema.parentNames.isNullOrEmpty()) return@f
-                addLookupElement(tagSchema, addedTagNames, prefixedResult)
-            }
+            addFallbackContextCompletions(parameters, schema, addedTagNames, prefixedResult)
         } else {
             val completionContextTagSchema = findCompletionContextTagSchema(parentTag)
             val effectiveContextTagSchema = when {

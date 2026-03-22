@@ -66,6 +66,29 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
         assertEquals("[list]\n [list]\n  ".length, myFixture.editor.caretModel.offset)
     }
 
+    fun testSuggestStarTagInsideList() {
+        myFixture.configureByText(
+            "star-tag-completion.bbcode",
+            "[list]\n [*<caret>\n[/list]"
+        )
+
+        val completionResults = myFixture.complete(CompletionType.BASIC).orEmpty()
+        val variants = (myFixture.lookupElementStrings.orEmpty() + completionResults.map { it.lookupString }).toSet()
+        assertTrue("Expected '*' completion; got: $variants", "*" in variants)
+    }
+
+    fun testStarTagCompletionInsertsClosingBracketAndSpace() {
+        myFixture.configureByText(
+            "star-tag-insert.bbcode",
+            "[list]\n [<caret>\n[/list]"
+        )
+
+        completeAndAccept("*")
+
+        assertEquals("[list]\n [*] \n[/list]", myFixture.editor.document.text)
+        assertEquals("[list]\n [*] ".length, myFixture.editor.caretModel.offset)
+    }
+
     fun testEnterBetweenListTagsExpandsToMiddleLine() {
         myFixture.configureByText("enter-between-list-tags.bbcode", "[list]<caret>[/list]")
 
