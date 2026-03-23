@@ -269,6 +269,111 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
         assertCaretAt("[ul]\n [".length)
     }
 
+    // ── Enter after content inside list container ──
+
+    fun testEnterAfterBulletContentInsertsTagOpen() {
+        configureText("[list]\n [*] test<caret>\n[/list]")
+        myFixture.type('\n')
+        assertDocEquals("[list]\n [*] test\n [\n[/list]")
+        assertCaretAt("[list]\n [*] test\n [".length)
+    }
+
+    fun testEnterAfterBulletContentInIndentedList() {
+        configureText(" [list]\n  [*] test<caret>\n [/list]")
+        myFixture.type('\n')
+        assertDocEquals(" [list]\n  [*] test\n  [\n [/list]")
+        assertCaretAt(" [list]\n  [*] test\n  [".length)
+    }
+
+    fun testEnterAfterBulletInRealWorldFile() {
+        configureText(
+            """
+                [list]
+                 [*][b]New Multiplayer Specific Mode:[/b]<caret>
+                 [list]
+                  [*] Only enable unrestricted land transfer for the host
+                  [*] New ability to trade land between players
+                  [*] Block land transfers between players that are not in the same war
+                 [/list]
+                 [*] Now requires the [url=TODO]Community Mod Framework[/url] (to detect the host player)
+                [/list]
+            """.trimIndent()
+        )
+        myFixture.type('\n')
+        val text = myFixture.editor.document.text
+        val caretOffset = myFixture.editor.caretModel.offset
+        // New line should have [ at the outer list's child indent
+        val caretLine = myFixture.editor.document.getLineNumber(caretOffset)
+        val lineStart = myFixture.editor.document.getLineStartOffset(caretLine)
+        val lineContent = text.substring(lineStart, myFixture.editor.document.getLineEndOffset(caretLine))
+        assertEquals("New line should be ' ['", " [", lineContent)
+    }
+
+    fun testEnterAfterLastBulletInRealWorldFile() {
+        configureText(
+            """
+                [list]
+                 [*][b]New Multiplayer Specific Mode:[/b]
+                 [list]
+                  [*] Only enable unrestricted land transfer for the host
+                  [*] New ability to trade land between players
+                  [*] Block land transfers between players that are not in the same war
+                 [/list]
+                 [*] Now requires the [url=TODO]Community Mod Framework[/url] (to detect the host player)<caret>
+                [/list]
+            """.trimIndent()
+        )
+        myFixture.type('\n')
+        val text = myFixture.editor.document.text
+        val caretOffset = myFixture.editor.caretModel.offset
+        val caretLine = myFixture.editor.document.getLineNumber(caretOffset)
+        val lineStart = myFixture.editor.document.getLineStartOffset(caretLine)
+        val lineContent = text.substring(lineStart, myFixture.editor.document.getLineEndOffset(caretLine))
+        assertEquals("New line should be ' ['", " [", lineContent)
+    }
+
+    fun testEnterAfterBulletInInnerList() {
+        configureText(
+            """
+                [list]
+                 [*][b]Feature:[/b]
+                 [list]
+                  [*] Sub-feature<caret>
+                 [/list]
+                [/list]
+            """.trimIndent()
+        )
+        myFixture.type('\n')
+        val text = myFixture.editor.document.text
+        val caretOffset = myFixture.editor.caretModel.offset
+        val caretLine = myFixture.editor.document.getLineNumber(caretOffset)
+        val lineStart = myFixture.editor.document.getLineStartOffset(caretLine)
+        val lineContent = text.substring(lineStart, myFixture.editor.document.getLineEndOffset(caretLine))
+        // Inner list child indent is 2 spaces
+        assertEquals("New line should be '  ['", "  [", lineContent)
+    }
+
+    fun testEnterInsideBoldTagDoesNotInsertTagOpen() {
+        // Inside [b]...[/b] within a list — should NOT insert [
+        configureText("[list]\n [*][b]bold<caret>[/b]\n[/list]")
+        myFixture.type('\n')
+        val text = myFixture.editor.document.text
+        assertFalse(
+            "Should not insert bare [ when inside [b] tag",
+            text.contains("\n [\n") || text.contains("\n[\n")
+        )
+    }
+
+    fun testEnterOnBareBracketDoesNotCascade() {
+        // If previous line is just [, don't insert another [
+        configureText("[list]\n [<caret>\n[/list]")
+        myFixture.type('\n')
+        val text = myFixture.editor.document.text
+        val lines = text.split("\n")
+        val bracketLines = lines.count { it.trim() == "[" }
+        assertTrue("Should not have cascading [ lines (got $bracketLines)", bracketLines <= 1)
+    }
+
     fun testStarTagAppearsFirstInCompletionList() {
         configureText("[list]\n [<caret>\n[/list]")
         myFixture.complete(CompletionType.BASIC)
