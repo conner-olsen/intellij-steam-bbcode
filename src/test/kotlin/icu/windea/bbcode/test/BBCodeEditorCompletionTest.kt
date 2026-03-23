@@ -199,8 +199,8 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
     fun testListCompletionExpandsWithContextIndent() {
         configureText("[list]\n [li<caret>\n[/list]")
         completeAndAccept("list")
-        assertDocEquals("[list]\n [list]\n  \n [/list]\n[/list]")
-        assertCaretAt("[list]\n [list]\n  ".length)
+        assertDocEquals("[list]\n [list]\n  [\n [/list]\n[/list]")
+        assertCaretAt("[list]\n [list]\n  [".length)
     }
 
     fun testListCompletionAfterNestedListUsesOuterIndent() {
@@ -217,8 +217,8 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
         )
         completeAndAccept("list")
         // New [list] at 1-space indent should expand with 2-space child indent, NOT 3-space
-        assertDocEquals("[list]\n [*][b]Feature:[/b]\n [list]\n  [*] Sub-feature\n [/list]\n [list]\n  \n [/list]\n[/list]")
-        assertCaretAt("[list]\n [*][b]Feature:[/b]\n [list]\n  [*] Sub-feature\n [/list]\n [list]\n  ".length)
+        assertDocEquals("[list]\n [*][b]Feature:[/b]\n [list]\n  [*] Sub-feature\n [/list]\n [list]\n  [\n [/list]\n[/list]")
+        assertCaretAt("[list]\n [*][b]Feature:[/b]\n [list]\n  [*] Sub-feature\n [/list]\n [list]\n  [".length)
     }
 
     fun testSuggestListInLineItemWithoutFollowingLineTag() {
@@ -244,29 +244,29 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
     fun testEnterBetweenEmptyListTagsExpandsBody() {
         configureText("[list]<caret>[/list]")
         myFixture.type('\n')
-        assertDocEquals("[list]\n \n[/list]")
-        assertCaretAt("[list]\n ".length)
+        assertDocEquals("[list]\n [\n[/list]")
+        assertCaretAt("[list]\n [".length)
     }
 
     fun testEnterBetweenEmptyIndentedListTagsExpandsBody() {
         configureText(" [list]<caret>[/list]")
         myFixture.type('\n')
-        assertDocEquals(" [list]\n  \n [/list]")
-        assertCaretAt(" [list]\n  ".length)
+        assertDocEquals(" [list]\n  [\n [/list]")
+        assertCaretAt(" [list]\n  [".length)
     }
 
     fun testEnterBetweenEmptyOlistTagsExpandsBody() {
         configureText("[olist]<caret>[/olist]")
         myFixture.type('\n')
-        assertDocEquals("[olist]\n \n[/olist]")
-        assertCaretAt("[olist]\n ".length)
+        assertDocEquals("[olist]\n [\n[/olist]")
+        assertCaretAt("[olist]\n [".length)
     }
 
     fun testEnterBetweenEmptyUlTagsExpandsBody() {
         configureText("[ul]<caret>[/ul]")
         myFixture.type('\n')
-        assertDocEquals("[ul]\n \n[/ul]")
-        assertCaretAt("[ul]\n ".length)
+        assertDocEquals("[ul]\n [\n[/ul]")
+        assertCaretAt("[ul]\n [".length)
     }
 
     fun testStarTagAppearsFirstInCompletionList() {

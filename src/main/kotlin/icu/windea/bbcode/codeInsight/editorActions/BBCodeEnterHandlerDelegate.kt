@@ -1,5 +1,6 @@
 package icu.windea.bbcode.codeInsight.editorActions
 
+import com.intellij.codeInsight.*
 import com.intellij.codeInsight.editorActions.enter.*
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.editor.*
@@ -13,7 +14,7 @@ private val blockContainerTagNames = setOf("list", "ul", "ol", "olist")
 
 // Expand [list]|[/list] on Enter to:
 // [list]
-//  |
+//  [|
 // [/list]
 class BBCodeEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
     override fun postProcessEnter(file: PsiFile, editor: Editor, dataContext: DataContext): EnterHandlerDelegate.Result {
@@ -45,8 +46,9 @@ class BBCodeEnterHandlerDelegate : EnterHandlerDelegateAdapter() {
         val baseIndent = chars.subSequence(currentLineStartOffset, closingStartOffset).toString()
         if(baseIndent.any { !it.isWhitespace() }) return EnterHandlerDelegate.Result.Continue
 
-        document.insertString(closingStartOffset, " \n$baseIndent")
-        editor.caretModel.moveToOffset(closingStartOffset + 1)
+        document.insertString(closingStartOffset, " [\n$baseIndent")
+        editor.caretModel.moveToOffset(closingStartOffset + 2)
+        AutoPopupController.getInstance(editor.project!!).scheduleAutoPopup(editor)
         return EnterHandlerDelegate.Result.Continue
     }
 }

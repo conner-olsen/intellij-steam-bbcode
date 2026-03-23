@@ -1,5 +1,6 @@
 package icu.windea.bbcode.codeInsight.completion
 
+import com.intellij.codeInsight.*
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.*
 import com.intellij.openapi.editor.*
@@ -232,10 +233,11 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
         val childIndent = "$baseIndent "
         // Expand [tag]|[/tag] to:
         // [tag]
-        // <baseIndent><one-indent>|
+        // <baseIndent><one-indent>[|
         // [/tag]
-        document.insertString(caretOffset, "\n$childIndent\n$baseIndent")
-        editor.caretModel.moveToOffset(caretOffset + 1 + childIndent.length)
+        document.insertString(caretOffset, "\n$childIndent[\n$baseIndent")
+        editor.caretModel.moveToOffset(caretOffset + 1 + childIndent.length + 1)
+        AutoPopupController.getInstance(context.project).scheduleAutoPopup(editor)
     }
 
     private fun findOpeningTagOffset(text: CharSequence, lineStartOffset: Int, caretOffset: Int): Int {
