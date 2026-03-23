@@ -1,5 +1,6 @@
 package icu.windea.bbcode.codeInsight.editorActions
 
+import com.intellij.codeInsight.*
 import com.intellij.codeInsight.editorActions.*
 import com.intellij.openapi.editor.*
 import com.intellij.openapi.project.*
@@ -15,6 +16,29 @@ import icu.windea.bbcode.psi.BBCodeTypes.*
 //com.intellij.codeInsight.editorActions.XmlSlashTypedHandler
 
 class BBCodeSlashTypedHandler : TypedHandlerDelegate() {
+    override fun checkAutoPopup(charTyped: Char, project: Project, editor: Editor, file: PsiFile): Result {
+        if(file !is BBCodeFile) return Result.CONTINUE
+        val offset = editor.caretModel.offset
+        val text = editor.document.charsSequence
+        if(charTyped == '[') {
+            AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+            return Result.STOP
+        }
+        if(isTagNameCharacter(charTyped) && offset >= 2) {
+            var i = offset - 2
+            while(i >= 0 && isTagNameCharacter(text[i])) i--
+            if(i >= 0 && text[i] == '[' && (i + 1 >= text.length || text[i + 1] != '/')) {
+                AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+                return Result.STOP
+            }
+        }
+        return Result.CONTINUE
+    }
+
+    private fun isTagNameCharacter(c: Char): Boolean {
+        return c.isLetterOrDigit() || c == '_' || c == '-' || c == '*'
+    }
+
     override fun charTyped(c: Char, project: Project, editor: Editor, editedFile: PsiFile): Result {
         if (c == ']' || c == '/') {
             PsiDocumentManager.getInstance(project).commitAllDocuments()

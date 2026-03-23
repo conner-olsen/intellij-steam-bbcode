@@ -189,7 +189,10 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
                     }
                 }
             }
-        result.addElement(lookupElement)
+        val prioritized = if(tagSchema.type == BBCodeTagType.Line) {
+            PrioritizedLookupElement.withPriority(lookupElement, 1.0)
+        } else lookupElement
+        result.addElement(prioritized)
     }
 
     private fun insertLineTagTrailingSpace(editor: Editor) {
