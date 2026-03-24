@@ -194,6 +194,57 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
         assertDocEquals("[list]\n [*] \n[/list]")
     }
 
+    // ── Inline completion inside [*] body ──
+
+    fun testInlineTagsOfferedInsideBulletContent() {
+        // After [*] content, typing [ should offer inline tags like b, i, url — not list children
+        configureText("[list]\n [*] text [<caret>\n[/list]")
+        myFixture.complete(CompletionType.BASIC)
+        val items = myFixture.lookupElementStrings!!
+        assertTrue("'b' should be offered inside bullet content", "b" in items)
+        assertTrue("'i' should be offered inside bullet content", "i" in items)
+        assertTrue("'url' should be offered inside bullet content", "url" in items)
+        assertFalse("'*' should NOT be offered inside bullet content", "*" in items)
+    }
+
+    fun testInlineTagsOfferedInsideBulletAfterBoldTag() {
+        // Even after an inline tag, we should still get inline completions
+        configureText("[list]\n [*][b]Feature:[/b] text [<caret>\n[/list]")
+        myFixture.complete(CompletionType.BASIC)
+        val items = myFixture.lookupElementStrings!!
+        assertTrue("'url' should be offered after [b]...[/b] in bullet", "url" in items)
+        assertTrue("'b' should be offered", "b" in items)
+        assertFalse("'*' should NOT be offered mid-line", "*" in items)
+    }
+
+    fun testInlineTagsOfferedInRealWorldBulletContent() {
+        configureText(
+            """
+                [list]
+                 [*] [b]New automation[/b] to automatically join / take over subject wars
+                 [*] [b]New settings[/b] to control automatic map sharing
+                 [*] [b]New subject rights customization[/b] for blocking colonization
+                 [*] [<caret>
+                [/list]
+            """.trimIndent()
+        )
+        myFixture.complete(CompletionType.BASIC)
+        val items = myFixture.lookupElementStrings!!
+        assertTrue("'b' should be offered on bullet line after [*] ", "b" in items)
+        assertTrue("'url' should be offered on bullet line after [*] ", "url" in items)
+        assertFalse("'*' should NOT be offered mid-line after [*] ", "*" in items)
+    }
+
+    fun testListChildrenStillOfferedAtLineStartInList() {
+        // At the start of a line inside [list], list children should still be offered
+        configureText("[list]\n [<caret>\n[/list]")
+        myFixture.complete(CompletionType.BASIC)
+        val items = myFixture.lookupElementStrings!!
+        assertTrue("'*' should be offered at line start in list", "*" in items)
+        assertTrue("'li' should be offered at line start in list", "li" in items)
+        assertTrue("'list' should be offered at line start in list", "list" in items)
+    }
+
     // ── [list] completion expansion tests ──
 
     fun testListCompletionExpandsWithContextIndent() {

@@ -32,9 +32,14 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
         if(parentTag == null) {
             addFallbackContextCompletions(parameters, schema, addedTagNames, prefixedResult)
         } else {
-            val completionContextTagSchema = findCompletionContextTagSchema(parentTag)
+            val completionContextTagSchema = findCompletionContextTagSchema(parentTag, parameters.originalFile.text, parameters.offset)
+            // When inside a Line tag's body (e.g. [*] text [|), use its schema directly.
+            // It has no childNames, so the caller will offer inline/empty completions.
+            // Don't let the fallback scanner override this by finding the enclosing list.
+            val isInsideLineTagBody = completionContextTagSchema?.type == BBCodeTagType.Line
             val effectiveContextTagSchema = when {
                 completionContextTagSchema?.childNames != null -> completionContextTagSchema
+                isInsideLineTagBody -> completionContextTagSchema
                 else -> findFallbackContextTagSchema(parameters, schema)
                     ?.takeIf { it.childNames != null }
                     ?: completionContextTagSchema
@@ -129,15 +134,29 @@ class BBCodeTagNameCompletionProvider : CompletionProvider<CompletionParameters>
         return c.isLetterOrDigit() || c == '_' || c == '-' || c == '*'
     }
 
-    private fun findCompletionContextTagSchema(parentTag: BBCodeTag): BBCodeSchema.Tag? {
+    private fun findCompletionContextTagSchema(parentTag: BBCodeTag, fileText: String, caretOffset: Int): BBCodeSchema.Tag? {
         var currentTag: BBCodeTag? = parentTag
         while(currentTag != null) {
             val currentSchema = BBCodeSchemaManager.resolveForTag(currentTag)
             if(currentSchema != null) {
-                val candidateSchema = if(currentSchema.type == BBCodeTagType.Line) {
-                    currentTag.parent?.castOrNull<BBCodeTag>()?.let { BBCodeSchemaManager.resolveForTag(it) } ?: currentSchema
-                } else currentSchema
-                if(candidateSchema.childNames != null) return candidateSchema
+                if(currentSchema.type == BBCodeTagType.Line) {
+                    // Line tag body (e.g. [*]) — the PSI extends across lines until the
+                    // next [*] or [/list], but only SAME-LINE content is truly "inside
+                    // the bullet".  A [<caret> on a DIFFERENT line is a new list item.
+                    val tagOffset = currentTag.textOffset
+                    val lo = minOf(tagOffset, caretOffset).coerceIn(0, fileText.length)
+                    val hi = maxOf(tagOffset, caretOffset).coerceIn(0, fileText.length)
+                    val sameLine = '\n' !in fileText.substring(lo, hi)
+                    if(sameLine) {
+                        // Same line as [*] — typing inline content inside the bullet
+                        return currentSchema
+                    }
+                    // Different line — return null so the caller uses the fallback
+                    // text scanner, which correctly finds the enclosing [list] even
+                    // when the PSI tree is broken by the dummy identifier injection.
+                    return null
+                }
+                if(currentSchema.childNames != null) return currentSchema
             }
             currentTag = currentTag.parent?.castOrNull()
         }
