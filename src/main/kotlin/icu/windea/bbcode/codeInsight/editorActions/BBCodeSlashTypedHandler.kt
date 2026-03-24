@@ -3,6 +3,7 @@ package icu.windea.bbcode.codeInsight.editorActions
 import com.intellij.codeInsight.*
 import com.intellij.codeInsight.editorActions.*
 import com.intellij.openapi.editor.*
+import com.intellij.openapi.fileTypes.*
 import com.intellij.openapi.project.*
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.*
@@ -16,6 +17,16 @@ import icu.windea.bbcode.psi.BBCodeTypes.*
 //com.intellij.codeInsight.editorActions.XmlSlashTypedHandler
 
 class BBCodeSlashTypedHandler : TypedHandlerDelegate() {
+    // Insert [ ourselves to prevent IntelliJ's generic bracket auto-pairing ([ → [])
+    override fun beforeCharTyped(c: Char, project: Project, editor: Editor, file: PsiFile, fileType: FileType): Result {
+        if(file !is BBCodeFile) return Result.CONTINUE
+        if(c == '[') {
+            EditorModificationUtil.insertStringAtCaret(editor, "[", false, 1)
+            return Result.STOP
+        }
+        return Result.CONTINUE
+    }
+
     override fun checkAutoPopup(charTyped: Char, project: Project, editor: Editor, file: PsiFile): Result {
         if(file !is BBCodeFile) return Result.CONTINUE
         val offset = editor.caretModel.offset

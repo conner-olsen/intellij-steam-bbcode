@@ -374,6 +374,27 @@ class BBCodeEditorCompletionTest : BasePlatformTestCase() {
         assertTrue("Should not have cascading [ lines (got $bracketLines)", bracketLines <= 1)
     }
 
+    // ── Bracket auto-pairing prevention ──
+
+    fun testTypingOpenBracketDoesNotAutoInsertCloseBracket() {
+        configureText("text<caret>")
+        myFixture.type('[')
+        assertDocEquals("text[")
+    }
+
+    fun testTypingOpenBracketAtEndOfFileDoesNotAutoPair() {
+        configureText("<caret>")
+        myFixture.type('[')
+        assertDocEquals("[")
+    }
+
+    fun testTypingOpenBracketInsideListDoesNotAutoPair() {
+        configureText("[list]\n <caret>\n[/list]")
+        myFixture.type('[')
+        val text = myFixture.editor.document.text
+        assertFalse("Should not auto-pair [ to []", text.contains("[]"))
+    }
+
     fun testStarTagAppearsFirstInCompletionList() {
         configureText("[list]\n [<caret>\n[/list]")
         myFixture.complete(CompletionType.BASIC)
