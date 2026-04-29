@@ -263,3 +263,6 @@ dist
 /.idea
 /build-local
 /build-qc*
+
+# Local files
+local/
